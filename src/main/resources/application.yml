@@ -1,0 +1,28 @@
+server:
+  port: 9085
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource            # 当前数据源操作类型
+    driver-class-name: oracle.jdbc.driver.OracleDriver
+    url: jdbc:oracle:thin:@127.0.0.1:1521/orclpdb
+    username: mszl
+    password: root
+    dbcp2:
+      min-idle: 20                                           # 数据库连接池的最小维持连接数
+      initial-size: 20                                       # 初始化连接数
+      max-total: 40                                          # 最大连接数
+      max-wait-millis: 60000                                  # 等待连接获取的最大超时时间
+  jpa:
+    show-sql: true
+    database: ORACLE
+    hibernate:
+          ddl-auto: update
+mybatis:
+  config-location: classpath:mybatis/mybatis.cfg.xml        # mybatis配置文件所在路径
+  mapper-locations: classpath:mybatis/mapper/**/*.xml
+logging:
+  config: classpath:logback.xml
+
+  
+  
+  
