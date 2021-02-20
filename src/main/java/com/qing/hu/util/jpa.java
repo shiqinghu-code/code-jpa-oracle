@@ -79,6 +79,7 @@ public class jpa {
 		
 		writeEntity();
 		//writeSQL();
+		//writeSimpleEntity();
 		
 		//writeMapper();
 		
@@ -174,8 +175,7 @@ public class jpa {
 				continue;
 			}
 			cell = row.getCell(1);
-			if (commonColumns.contains(cell.toString()))
-				continue;
+			//if (commonColumns.contains(cell.toString())) continue; //注释掉baseEntity
 			writeRow();
 		}
 		data.append("\n}");
@@ -191,10 +191,40 @@ public class jpa {
 			out.close();
 		}
 	}
-	private static void writeSQL() throws IOException {
+	private static void writeSimpleEntity() throws IOException {
 		data = new StringBuilder();
-		
-		data.append(" create table "+tableName+"  (  \n");
+		data.append("package com.qing.hu.entity;\n\n" + "import com.qing.hu.entity.base.BaseEntity;\n"
+				 
+				+ "public class " + className + " extends BaseEntity {");
+
+		for (int i = 0; i < sheet.getLastRowNum(); i++) {
+			row = sheet.getRow(i);
+			if (row == null) {
+				continue;
+			}
+			Cell cell = row.getCell(0);
+			if (cell == null || cell.getCellType() != CellType.NUMERIC) {
+				continue;
+			}
+			cell = row.getCell(1);
+			//if (commonColumns.contains(cell.toString())) continue;//注释掉baseEntity
+			writeSimpleRow();
+		}
+		data.append("\n}");
+//        System.out.println(data);
+
+		File file = new File("src\\main\\java\\com\\qing\\hu\\entity\\" + className + ".java");
+		if (file.exists())
+			file.delete();
+		boolean b = file.createNewFile();
+		if (b) {
+			Writer out = new FileWriter(file);
+			out.write(data.toString());
+			out.close();
+		}
+	}
+	private static void writeSQL() throws IOException {
+		System.out.println("----1-----------");
 		for (int i = 0; i < sheet.getLastRowNum(); i++) {
 			row = sheet.getRow(i);
 			if (row == null) {
@@ -207,15 +237,37 @@ public class jpa {
 			cell = row.getCell(1);
 			if (commonColumns.contains(cell.toString()))
 				continue;
-
-			String rowName = row.getCell(1).toString();
-			String rowtype =row.getCell(3) + "";
 			
+			String reference=row.getCell(9).toString().replaceAll("\\\"|\\\'|\\\n", "");
+			String rowName = row.getCell(1).toString();
+
+
+			String definition = " comment on column "+tableName+"."+rowName+" is '"+reference+"'; ";
+			System.out.println(definition);
+ 
 		}
-				
-		 
-		data.append("\n)");
-		System.out.println(data.toString());
+
+		
+		String definition1 = " comment on column "+tableName+".UPD_TIME is '更新时间(更新日期)	'; ";
+		System.out.println(definition1);
+		
+		String definition2 = " comment on column "+tableName+".UPD_USER_ID is '更新者ID'; ";
+		System.out.println(definition2);
+		
+		String definition3 = " comment on column "+tableName+".INS_TIME is '作成时间(申请日期)	'; ";
+		System.out.println(definition3);
+		
+		String definition4 = " comment on column "+tableName+".INS_USER_ID is '作成者ID	'; ";
+		System.out.println(definition4);
+		
+		String definition5 = " comment on column "+tableName+".DEL_FLG is '删除FLG	0:未删除;1:已删除'; ";
+		System.out.println(definition5);
+		
+		
+		System.out.println("----2-----------");
+
+	 
+		
 	}
 	private static void writeRow() {
 		String rowName = row.getCell(1).toString();
@@ -230,7 +282,7 @@ public class jpa {
 		String definition = "    @Column(columnDefinition = \"";
 		definition += row.getCell(3);
 		if (columnNeedLength.contains(row.getCell(3) + "")) {
-			definition += "(" + row.getCell(4) + ")";
+			definition += "(" + intStr(row.getCell(4)+"") + ")";
 		}
 		if (row.getCell(7).getCellType() != CellType.BLANK) {
 			String defaultValue = row.getCell(7) + "";
@@ -238,7 +290,7 @@ public class jpa {
 			defaultValue = defaultValue.replace("\'", "");
 			definition += " default '" + defaultValue + "' ";
 		}
-		definition += " comment '" + row.getCell(9).toString().replaceAll("\\\"|\\\'|\\\n", "");
+		//definition += " comment '" + row.getCell(9).toString().replaceAll("\\\"|\\\'|\\\n", ""); //oracle不能注释而去掉
 		if (row.getCell(10).getCellType() != CellType.BLANK) {
 			String reference = row.getCell(10).toString();
 //            reference = reference.replaceAll("\\\"|\\\'|\\\n","");
@@ -247,12 +299,18 @@ public class jpa {
 			reference = reference.replace("\n", ",");
 			definition += "/" + reference;
 		}
-		definition += "'";
+		//definition += "'";//oracle不能注释而去掉
 		definition += "\") \n";
 		data.append(definition);
 		data.append("    private " + culumnTypeToJava.get(row.getCell(3) + "") + " " + rowName + "; ");
 	}
+	private static void writeSimpleRow() {
+		String rowName = row.getCell(1).toString();
 
+		rowName = CaseUtils.toCamelCase(rowName, false, new char[] { '_' });
+		data.append("\n");
+		data.append("    private " + culumnTypeToJava.get(row.getCell(3) + "") + " " + rowName + "; ");
+	}
 	private static void writeIService() throws IOException {
 		data = new StringBuilder();
 
@@ -343,4 +401,16 @@ public class jpa {
 		else
 			return (new StringBuilder()).append(Character.toLowerCase(s.charAt(0))).append(s.substring(1)).toString();
 	}
+	
+	//字符串去掉小数点后取整数
+	public static String intStr(String str) {
+		//String str = "70.2";
+		 if(str.contains(".")) {
+			 int indexOf = str.indexOf(".");
+			 str = str.substring(0, indexOf);
+		 }
+		 return str;
+	}
+
+	
 }
